@@ -243,6 +243,9 @@ func (m *Monitor) actOnPodEvent(ctx context.Context, status *api.WorkspaceStatus
 		//
 		// Beware: do not else-if this condition with the other phases as we don't want the stop
 		//         login in any other phase, too.
+		m.initializerMapLock.Lock()
+		delete(m.initializerMap, pod.Name)
+		m.initializerMapLock.Unlock()
 	} else if status.Conditions.Failed != "" || status.Conditions.Timeout != "" {
 		// the workspace has failed to run/start - shut it down
 		// we should mark the workspace as failedBeforeStopping - this way the failure status will persist
@@ -325,14 +328,14 @@ func (m *Monitor) actOnPodEvent(ctx context.Context, status *api.WorkspaceStatus
 			}
 		}
 
-		// once a regular workspace is up and running, we'll remove the traceID information so that the parent span
-		// ends once the workspace has started.
-		//
-		// Also, in case the pod gets evicted we would not know the hostIP that pod ran on anymore.
-		// In preparation for those cases, we'll add it as an annotation.
-		err := m.manager.markWorkspace(ctx, workspaceID, deleteMark(wsk8s.TraceIDAnnotation), addMark(hostIPAnnotation, wso.HostIP()))
-		if err != nil {
-			log.WithError(err).Warn("was unable to remove traceID and/or add host IP annotation from/to workspace")
+		if !wso.IsWorkspaceHeadless() {
+			span.LogKV("event", "removeTraceAnnotation")
+			// once a regular workspace is up and running, we'll remove the traceID information so that the parent span
+			// ends once the workspace has started
+			err := m.manager.markWorkspace(ctx, workspaceID, deleteMark(wsk8s.TraceIDAnnotation))
+			if err != nil {
+				log.WithError(err).Warn("was unable to remove traceID annotation from workspace")
+			}
 		}
 	}
 
@@ -498,7 +501,7 @@ func (m *Monitor) writeEventTraceLog(status *api.WorkspaceStatus, wso *workspace
 		}
 		for _, c := range twso.Pod.Spec.Containers {
 			for i, env := range c.Env {
-				isGitpodVar := strings.HasPrefix(env.Name, "GITPOD_") || strings.HasPrefix(env.Name, "THEIA_")
+				isGitpodVar := strings.HasPrefix(env.Name, "GITPOD_") || strings.HasPrefix(env.Name, "SUPERVISOR_") || strings.HasPrefix(env.Name, "BOB_") || strings.HasPrefix(env.Name, "THEIA_")
 				if isGitpodVar {
 					continue
 				}
