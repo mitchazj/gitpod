@@ -12,6 +12,8 @@ components:
       - /var/lib
       - /run/k3s/containerd/io.containerd.runtime.v1.linux
       - /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io
+    userNamespaces:
+      fsShift: fuse
   workspace:
     template:
       spec:
