@@ -25,8 +25,14 @@ docker-registry:
     enabled: true
     existingClaim: docker-registry
 minio:
+  accessKey: fDhEkcdeTb8Hq9VNbVJPEPFNZn6AVDAVX7hc3453
+  secretKey: fU6fm63LX4Pm64DRq9dr4nB55dr6NX9eYo812342
   persistence:
     existingClaim: minio
 mysql:
   persistence:
     existingClaim: mysql
+rabbitmq:
+  auth:
+    username: gitpod
+    password: gitpod
