@@ -78,28 +78,25 @@ fi
 
 
 # add HTTPS certs secret if certs are given in the folder /certs
-if [ -f /certs/chain.pem ] && [ -f /certs/dhparams.pem ] && [ -f /certs/fullchain.pem ] && [ -f /certs/privkey.pem ]; then
+if [ -f /certs/cert.pem ] &&  [ -f /certs/chain.pem ] && [ -f /certs/dhparams.pem ] && [ -f /certs/fullchain.pem ] && [ -f /certs/privkey.pem ]; then
+    CERT=$(base64 --wrap=0 < /certs/cert.pem)
     CHAIN=$(base64 --wrap=0 < /certs/chain.pem)
     DHPARAMS=$(base64 --wrap=0 < /certs/dhparams.pem)
     FULLCHAIN=$(base64 --wrap=0 < /certs/fullchain.pem)
     PRIVKEY=$(base64 --wrap=0 < /certs/privkey.pem)
-    cat << EOF > /var/lib/rancher/k3s/server/manifests/proxy-config-certificates.yaml
+    cat << EOF > /var/lib/rancher/k3s/server/manifests/https-certificates.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: proxy-config-certificates
+  name: https-certificates
   labels:
     app: gitpod
 data:
+  cert.pem: $CERT
   chain.pem: $CHAIN
   dhparams.pem: $DHPARAMS
   fullchain.pem: $FULLCHAIN
   privkey.pem: $PRIVKEY
-EOF
-
-    cat << EOF > /default_values/02_certificates_secret.yaml
-certificatesSecret:
-  secretName: proxy-config-certificates
 EOF
 fi
 
