@@ -31,7 +31,7 @@ export class ConfigProvider {
         cloneUrl: 'https://github.com/gitpod-io/definitely-gp'
     };
 
-    @inject(GitpodFileParser) protected readonly gitpodParser: GitpodFileParser
+    @inject(GitpodFileParser) protected readonly gitpodParser: GitpodFileParser;
     @inject(ConfigInferenceProvider) protected readonly inferingConfigProvider: ConfigInferenceProvider;
     @inject(HostContextProvider) protected readonly hostContextProvider: HostContextProvider;
     @inject(AuthorizationService) protected readonly authService: AuthorizationService;

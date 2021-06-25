@@ -110,7 +110,7 @@ export interface GitpodServer extends JsonRpcServer<GitpodClient>, AdminServer, 
     setEnvVar(variable: UserEnvVarValue): Promise<void>;
     deleteEnvVar(variable: UserEnvVarValue): Promise<void>;
 
-    // teams and projects
+    // teams
     getTeams(): Promise<Team[]>;
     getTeamMembers(teamId: string): Promise<TeamMemberInfo[]>;
     createTeam(name: string): Promise<Team>;
@@ -119,6 +119,13 @@ export interface GitpodServer extends JsonRpcServer<GitpodClient>, AdminServer, 
     removeTeamMember(teamId: string, userId: string): Promise<void>;
     getGenericInvite(teamId: string): Promise<TeamMembershipInvite>;
     resetGenericInvite(inviteId: string): Promise<TeamMembershipInvite>;
+
+    // projects
+    getProviderRepositoriesForUser(params: GetProviderRepositoriesParams): Promise<ProviderRepository[]>;
+    createProject(params: CreateProjectParams): Promise<Project>;
+    getProjects(teamId: string): Promise<ProjectInfo[]>;
+    getPrebuilds(teamId: string, projectId: string): Promise<PrebuildInfo[]>;
+    setProjectConfiguration(projectId: string, configString: string): Promise<void>;
 
     // content service
     getContentBlobUploadUrl(name: string): Promise<string>
@@ -203,16 +210,7 @@ export interface GitpodServer extends JsonRpcServer<GitpodClient>, AdminServer, 
     tsReassignSlot(teamSubscriptionId: string, teamSubscriptionSlotId: string, newIdentityStr: string): Promise<void>;
     tsDeactivateSlot(teamSubscriptionId: string, teamSubscriptionSlotId: string): Promise<void>;
     tsReactivateSlot(teamSubscriptionId: string, teamSubscriptionSlotId: string): Promise<void>;
-
     getGithubUpgradeUrls(): Promise<GithubUpgradeURL[]>;
-
-    /**
-     * projects
-     */
-    getProviderRepositoriesForUser(params: GetProviderRepositoriesParams): Promise<ProviderRepository[]>;
-    createProject(params: CreateProjectParams): Promise<Project>;
-    getProjects(teamId: string): Promise<ProjectInfo[]>;
-    getPrebuilds(teamId: string, project: string): Promise<PrebuildInfo[]>;
 
     /**
      * Analytics

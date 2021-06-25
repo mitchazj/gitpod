@@ -10,5 +10,7 @@ export const ProjectDB = Symbol('ProjectDB');
 export interface ProjectDB {
     findProjectsByTeam(teamId: string): Promise<Project[]>;
     findProjectByInstallationId(installationId: string): Promise<Project | undefined>;
+    findProjectByCloneUrl(cloneUrl: string): Promise<Project | undefined>;
     createProject(name: string, cloneUrl: string, teamId: string, appInstallationId: string): Promise<Project>;
+    setProjectConfiguration(projectId: string, config: string): Promise<void>;
 }

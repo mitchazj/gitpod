@@ -14,6 +14,7 @@ import { DisposableCollection, GitpodServer, HEADLESS_LOG_STREAM_STATUS_CODE_REG
 export interface WorkspaceLogsProps {
   logsEmitter: EventEmitter;
   errorMessage?: string;
+  classes?: string;
 }
 
 export interface WorkspaceLogsState {
@@ -81,8 +82,8 @@ export default class WorkspaceLogs extends React.Component<WorkspaceLogsProps, W
   }
 
   render() {
-    return <div className="mt-6 h-72 w-11/12 lg:w-3/5 rounded-xl bg-black p-6">
-      <div className="h-full w-full" ref={this.xTermParentRef}></div>
+    return <div className={`mt-6 ${this.props.classes || 'h-72 w-11/12 lg:w-3/5'} rounded-xl bg-black relative`}>
+      <div className="absolute top-0 left-0 bottom-0 right-0 m-6" ref={this.xTermParentRef}></div>
     </div>;
   }
 }

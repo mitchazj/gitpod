@@ -905,7 +905,7 @@ export interface Commit {
     refType?: RefType
 }
 
-export interface AdditionalContentContext {
+export interface AdditionalContentContext extends WorkspaceContext {
 
     /**
      * utf-8 encoded contents that will be copied on top of the workspace's filesystem
@@ -1225,6 +1225,7 @@ export interface Project {
     cloneUrl: string;
     teamId: string;
     appInstallationId: string;
+    config?: string;
     creationTime: string;
     /** This is a flag that triggers the HARD DELETION of this entity */
     deleted?: boolean;

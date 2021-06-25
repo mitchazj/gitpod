@@ -11,6 +11,7 @@ import { AuthProviderEntry, AuthProviderInfo, Branding, CommitContext, Configura
 import { AccountStatement } from "@gitpod/gitpod-protocol/lib/accounting-protocol";
 import { AdminBlockUserRequest, AdminGetListRequest, AdminGetListResult, AdminGetWorkspacesRequest, AdminModifyPermanentWorkspaceFeatureFlagRequest, AdminModifyRoleOrPermissionRequest, WorkspaceAndInstance } from '@gitpod/gitpod-protocol/lib/admin-protocol';
 import { GetLicenseInfoResult, LicenseFeature, LicenseValidationResult } from '@gitpod/gitpod-protocol/lib/license-protocol';
+import { GitpodFileParser } from '@gitpod/gitpod-protocol/lib/gitpod-file-parser';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
 import { GithubUpgradeURL, PlanCoupon } from "@gitpod/gitpod-protocol/lib/payment-protocol";
 import { TeamSubscription, TeamSubscriptionSlot, TeamSubscriptionSlotResolved } from "@gitpod/gitpod-protocol/lib/team-subscription-protocol";
@@ -60,6 +61,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     @inject(MessageBusIntegration) protected readonly messageBusIntegration: MessageBusIntegration;
     @inject(ContextParser) protected contextParser: ContextParser;
     @inject(HostContextProvider) protected readonly hostContextProvider: HostContextProvider;
+    @inject(GitpodFileParser) protected readonly gitpodParser: GitpodFileParser;
 
     @inject(WorkspaceStarter) protected readonly workspaceStarter: WorkspaceStarter;
     @inject(WorkspaceManagerClientProvider) protected readonly workspaceManagerClientProvider: WorkspaceManagerClientProvider;
@@ -1435,6 +1437,7 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
 
     public async joinTeam(inviteId: string): Promise<Team> {
         const user = this.checkUser("joinTeam");
+        // Invites can be used by anyone, as long as they know the invite ID, hence needs no resource guard
         const invite = await this.teamDB.findTeamMembershipInviteById(inviteId);
         if (!invite || invite.invalidationTime !== '') {
             throw new ResponseError(ErrorCodes.NOT_FOUND, "The invite link is no longer valid.");
@@ -1480,6 +1483,41 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         }
         const members = await this.teamDB.findMembersByTeam(team.id);
         await this.guardAccess({ kind: "team", subject: team, members }, op);
+    }
+
+    async getProviderRepositoriesForUser(params: { provider: string }): Promise<ProviderRepository[]> {
+        this.checkAndBlockUser("getProviderRepositoriesForUser");
+        // Note: this operation is per-user only, hence needs no resource guard
+        return [];
+    }
+
+    public async createProject(params: CreateProjectParams): Promise<Project> {
+        this.checkUser("createProject");
+        const { name, cloneUrl, teamId, appInstallationId } = params;
+        // Anyone who can read a team's information (i.e. any team member) can create a new project.
+        await this.guardTeamOperation(teamId, "get");
+        return this.projectDB.createProject(name, cloneUrl, teamId, appInstallationId);
+    }
+
+    public async getProjects(teamId: string): Promise<ProjectInfo[]> {
+        this.checkUser("getProjects");
+        await this.guardTeamOperation(teamId, "get");
+        return this.projectDB.findProjectsByTeam(teamId);
+    }
+
+    public async getPrebuilds(teamId: string, projectId: string): Promise<PrebuildInfo[]> {
+        this.checkAndBlockUser("getPrebuilds");
+        await this.guardTeamOperation(teamId, "get");
+        return [];
+    }
+
+    public async setProjectConfiguration(projectId: string, configString: string): Promise<void> {
+        this.checkUser("setProjectConfiguration");
+        const parseResult = this.gitpodParser.parse(configString);
+        if (parseResult.validationErrors) {
+            throw new Error(`This configuration could not be parsed: ${parseResult.validationErrors.join(', ')}`);
+        }
+        await this.projectDB.setProjectConfiguration(projectId, configString);
     }
 
     public async getContentBlobUploadUrl(name: string): Promise<string> {
@@ -1892,37 +1930,6 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     }
     async getGithubUpgradeUrls(): Promise<GithubUpgradeURL[]> {
         throw new ResponseError(ErrorCodes.SAAS_FEATURE, `Not implemented in this version`);
-    }
-    //
-    //#endregion
-
-
-
-    //#region Projects concerns
-    //
-    async getProviderRepositoriesForUser(params: { provider: string }): Promise<ProviderRepository[]> {
-        this.checkAndBlockUser("getProviderRepositoriesForUser");
-        return [];
-    }
-    public async createProject(params: CreateProjectParams): Promise<Project> {
-        this.checkUser("createProject");
-        const { name, cloneUrl, teamId, appInstallationId } = params;
-        // Anyone who can read a team's information (i.e. any team member) can create a new project.
-        await this.guardTeamOperation(teamId, "get");
-        return this.projectDB.createProject(name, cloneUrl, teamId, appInstallationId);
-    }
-    public async getProjects(teamId: string): Promise<ProjectInfo[]> {
-        this.checkUser("getProjects");
-        await this.guardTeamOperation(teamId, "get");
-        const result: Project[] = [];
-        const toProjectInfo = (p: Project) => ({ ...p });
-        result.push(...(await this.projectDB.findProjectsByTeam(teamId)).map(toProjectInfo));
-        return result;
-    }
-    public async getPrebuilds(teamId: string, project: string): Promise<PrebuildInfo[]> {
-        this.checkAndBlockUser("getPrebuilds");
-        await this.guardTeamOperation(teamId, "get");
-        return [];
     }
     //
     //#endregion

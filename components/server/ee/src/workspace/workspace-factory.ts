@@ -8,7 +8,7 @@ import * as uuidv4 from 'uuid/v4';
 import { WorkspaceFactory } from "../../../src/workspace/workspace-factory";
 import { injectable, inject } from "inversify";
 import { TraceContext } from "@gitpod/gitpod-protocol/lib/util/tracing";
-import { User, StartPrebuildContext, Workspace, CommitContext, PrebuiltWorkspaceContext, WorkspaceContext, WithSnapshot, WithPrebuild, TaskConfig } from "@gitpod/gitpod-protocol";
+import { User, StartPrebuildContext, Workspace, CommitContext, PrebuiltWorkspaceContext, WorkspaceContext, WithSnapshot, WithPrebuild, TaskConfig, AdditionalContentContext } from "@gitpod/gitpod-protocol";
 import { log } from '@gitpod/gitpod-protocol/lib/util/logging';
 import { LicenseEvaluator } from '@gitpod/licensor/lib';
 import { Feature } from '@gitpod/licensor/lib/api';
@@ -46,9 +46,13 @@ export class WorkspaceFactoryEE extends WorkspaceFactory {
                 throw new Error("Can only prebuild workspaces with a commit context")
             }
 
-            const { project, branch } = context;
-
             const commitContext: CommitContext = context.actual;
+
+            const { project, branch } = context;
+            if (project?.config) {
+                (commitContext as any as AdditionalContentContext).additionalFiles = { '.gitpod.yml': project.config };
+            }
+
             const existingPWS = await this.db.trace({span}).findPrebuiltWorkspaceByCommit(commitContext.repository.cloneUrl, commitContext.revision);
             if (existingPWS) {
                 const wsInstance = await this.db.trace({span}).findRunningInstance(existingPWS.buildWorkspaceId);
