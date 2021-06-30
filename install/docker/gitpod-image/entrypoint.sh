@@ -11,7 +11,7 @@ mount --make-rshared /
 BASEDOMAIN=${BASEDOMAIN:-}                          # Used as Gitpod domain, `gitpod.` prefix will be added.
 DOMAIN=${DOMAIN:-}                                  # Used as Gitpod ddomain as is.
 REMOVE_NETWORKPOLICIES=${REMOVE_NETWORKPOLICIES:-}  # Remove Gitpod network policies when set to 'true'.
-HELMIMAGE=${HELMIMAGE:-alpine/helm:3.2.4}           # Image that is used for the helm install.
+HELMIMAGE=${HELMIMAGE:-alpine/helm:3.6.2}           # Image that is used for the helm install.
 
 
 mkdir -p /values
