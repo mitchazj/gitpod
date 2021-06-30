@@ -13,7 +13,7 @@ services:
       - gitpod-mysql:/var/gitpod/mysql
       - gitpod-workspaces:/var/gitpod/workspaces
       - ./values:/values
-      # - ./certs:/certs
+      - ./certs:/certs
     ports:
       - 443:443
       - 80:80

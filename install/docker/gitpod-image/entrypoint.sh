@@ -101,19 +101,6 @@ EOF
 fi
 
 
-# configure Gitpod for mygitpod.com domain
-case "$DOMAIN" in
-  *ip.mygitpod.com)
-    cat << EOF > /default_values/03_ip_mygitpod_com.yaml
-components:
-  imageBuilder:
-    registry:
-      bypassProxy: true
-EOF
-    ;;
-esac
-
-
 # prepare Gitpod helm installer
 GITPOD_HELM_INSTALLER_FILE=/var/lib/rancher/k3s/server/manifests/gitpod-helm-installer.yaml
 

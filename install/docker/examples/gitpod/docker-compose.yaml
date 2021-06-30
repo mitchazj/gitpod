@@ -6,7 +6,7 @@ services:
     privileged: true
     volumes:
       - ./values:/values
-      # - ./certs:/certs
+      - ./certs:/certs
     ports:
       - 443:443
       - 80:80
