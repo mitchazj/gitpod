@@ -43,7 +43,7 @@ data:
         {{ .username }} {{ bcrypt .password | b64enc }}
       }
 
-      reverse_proxy https://{{ index .Values "docker-registry" "fullnameOverride" }}.{{ .Release.Namespace }}.{$KUBE_DOMAIN} {
+      reverse_proxy https://{{ include "gitpod.builtinRegistry.internal_name" . }} {
         flush_interval -1
       }
     }
