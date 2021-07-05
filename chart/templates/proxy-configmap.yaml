@@ -45,6 +45,9 @@ data:
 
       reverse_proxy https://{{ include "gitpod.builtinRegistry.internal_name" . }} {
         flush_interval -1
+        transport http {
+          tls_insecure_skip_verify
+        }
       }
     }
 {{- end }}

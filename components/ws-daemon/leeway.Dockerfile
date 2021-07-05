@@ -10,6 +10,8 @@ RUN apk add --no-cache curl \
 
 FROM alpine:3.13
 
+RUN date > /buildtime.txt
+
 RUN apk upgrade \
   && rm -rf /var/cache/apk/*
 
