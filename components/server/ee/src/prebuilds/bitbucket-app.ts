@@ -91,7 +91,7 @@ export class BitbucketApp {
             }
 
             console.log('Starting prebuild.', { contextURL })
-            const ws = await this.prebuildManager.startPrebuild({ span }, user, contextURL, data.gitCloneUrl, data.commitHash);
+            const ws = await this.prebuildManager.startPrebuild({ span }, { user, contextURL, cloneURL: data.gitCloneUrl, commit: data.commitHash});
             return ws;
         } finally {
             span.finish();

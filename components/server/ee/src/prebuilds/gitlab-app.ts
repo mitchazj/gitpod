@@ -93,7 +93,7 @@ export class GitLabApp {
             }
 
             console.log('Starting prebuild.', { contextURL, commit: body.after, gitUrl: body.repository.git_http_url })
-            const ws = await this.prebuildManager.startPrebuild({ span }, user, contextURL, body.repository.git_http_url, body.after);
+            const ws = await this.prebuildManager.startPrebuild({ span }, { user, contextURL, cloneURL: body.repository.git_http_url, commit: body.after });
             return ws;
         } finally {
             span.finish();
