@@ -27,11 +27,6 @@ interface Entry {
     alternatives?: string[]
 }
 
-function isSelected(entry: Entry, location: Location<any>) {
-    const all = [entry.link, ...(entry.alternatives||[])];
-    const path = location.pathname.toLowerCase();
-    return all.some(n => n === path || n+'/' === path);
-}
 
 export default function Menu() {
     const { user } = useContext(UserContext);
@@ -39,13 +34,19 @@ export default function Menu() {
     const history = useHistory();
     const location = useLocation();
 
-    const match = useRouteMatch<{ team: string, resource: string }>("/:team/:resource");
+    const match = useRouteMatch<{ segment1?: string, segment2?: string, segment3?: string }>("/:segment1/:segment2?/:segment3?");
     const projectName = (() => {
-        const resource = match?.params?.resource;
+        const resource = match?.params?.segment2;
         if (resource !== "projects" && resource !== "members") {
             return resource;
         }
     })();
+
+    function isSelected(entry: Entry, location: Location<any>) {
+        const all = [entry.link, ...(entry.alternatives||[])].map(l => l.toLowerCase());
+        const path = location.pathname.toLowerCase();
+        return all.some(n => n === path || n+'/' === path);
+    }
 
     const userFullName = user?.fullName || user?.name || '...';
     const showTeamsUI = user?.rolesOrPermissions?.includes('teams-and-projects') || window.location.hostname.endsWith('gitpod-dev.com') || window.location.hostname.endsWith('gitpod-io-dev.com');
@@ -234,7 +235,7 @@ export default function Menu() {
                 </div>
             </div>
             {!isMinimalUI && showTeamsUI && <div className="flex">
-                {leftMenu.map(entry => <TabMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link}/>)}
+                {leftMenu.map((entry: Entry) => <TabMenuItem name={entry.title} selected={isSelected(entry, location)} link={entry.link}/>)}
             </div>}
         </header>
         {showTeamsUI && <Separator />}

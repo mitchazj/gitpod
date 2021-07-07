@@ -21,6 +21,7 @@ export default function () {
     const projectName = match?.params?.resource;
     const team = getCurrentTeam(location, teams);
 
+    // @ts-ignore
     const [project, setProject] = useState<ProjectInfo | undefined>();
 
     const [prebuilds, setPrebuilds] = useState<PrebuildInfo[]>([]);
@@ -60,7 +61,7 @@ export default function () {
     }, [team]);
 
     return <>
-        <Header title="Prebuilds" subtitle={`Prebuild for ${project?.name}`} />
+        <Header title="Prebuilds" subtitle={`View all recent prebuilds for all active branches.`} />
         <div className="lg:px-28 px-10">
             <div className="flex mt-8">
                 <div className="flex">
