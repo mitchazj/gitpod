@@ -21,8 +21,11 @@ const (
 	// Used as key for storing the workspace ID in the requests mux.Vars() map
 	workspaceIDIdentifier = "workspaceID"
 
-	// Used as key for storing the origin prefix to fetch foreign content
-	foreignOriginPrefix = "foreignOriginPrefix"
+	// Used as key for storing the origin to fetch foreign content
+	foreignOriginIdentifier = "foreignOrigin"
+
+	// Used as key for storing the path to fetch foreign content
+	foreignPathIdentifier = "foreignPath"
 
 	// The header that is used to communicate the "Host" from proxy -> ws-proxy in scenarios where ws-proxy is _not_ directly exposed
 	forwardedHostnameHeader = "x-wsproxy-host"
@@ -72,14 +75,39 @@ func HostBasedRouter(header, wsHostSuffix string, wsHostSuffixRegex string) Work
 type hostHeaderProvider func(req *http.Request) string
 
 func matchWorkspaceHostHeader(wsHostSuffix string, headerProvider hostHeaderProvider) mux.MatcherFunc {
+	// remove (webview-|browser-|extensions-) prefix as soon as Theia removed and new VS Code is used in all workspaces
 	r := regexp.MustCompile("^(webview-|browser-|extensions-)?" + workspaceIDRegex + wsHostSuffix)
+	foreignContentHostR := regexp.MustCompile("^(.*)(?:foreign)" + wsHostSuffix)
+	foreignContentPathR := regexp.MustCompile("^/" + workspaceIDRegex + "(/.*)")
 	return func(req *http.Request, m *mux.RouteMatch) bool {
 		hostname := headerProvider(req)
 		if hostname == "" {
 			return false
 		}
 
-		matches := r.FindStringSubmatch(hostname)
+		matches := foreignContentHostR.FindStringSubmatch(hostname)
+		if len(matches) == 2 {
+			foreignOrigin := matches[1]
+			matches = foreignContentPathR.FindStringSubmatch(req.URL.Path)
+			if len(matches) < 3 {
+				return false
+			}
+
+			workspaceID := matches[1]
+			if workspaceID == "" {
+				return false
+			}
+
+			if m.Vars == nil {
+				m.Vars = make(map[string]string)
+			}
+			m.Vars[workspaceIDIdentifier] = workspaceID
+			m.Vars[foreignOriginIdentifier] = foreignOrigin
+			m.Vars[foreignPathIdentifier] = matches[2]
+			return true
+		}
+
+		matches = r.FindStringSubmatch(hostname)
 		if len(matches) < 3 {
 			return false
 		}
@@ -94,21 +122,52 @@ func matchWorkspaceHostHeader(wsHostSuffix string, headerProvider hostHeaderProv
 		}
 		m.Vars[workspaceIDIdentifier] = workspaceID
 		if len(matches) == 3 {
-			m.Vars[foreignOriginPrefix] = matches[1]
+			m.Vars[foreignOriginIdentifier] = matches[1]
 		}
 		return true
 	}
 }
 
 func matchWorkspacePortHostHeader(wsHostSuffix string, headerProvider hostHeaderProvider) mux.MatcherFunc {
+	// remove (webview-|browser-|extensions-) prefix as soon as Theia removed and new VS Code is used in all workspaces
 	r := regexp.MustCompile("^(webview-|browser-|extensions-)?" + workspacePortRegex + workspaceIDRegex + wsHostSuffix)
+	foreignContentHostR := regexp.MustCompile("^(.*)(?:foreign)" + wsHostSuffix)
+	foreignContentPathR := regexp.MustCompile("^/" + workspacePortRegex + workspaceIDRegex + "(/.*)")
 	return func(req *http.Request, m *mux.RouteMatch) bool {
 		hostname := headerProvider(req)
 		if hostname == "" {
 			return false
 		}
 
-		matches := r.FindStringSubmatch(hostname)
+		matches := foreignContentHostR.FindStringSubmatch(hostname)
+		if len(matches) == 2 {
+			foreignOrigin := matches[1]
+			matches = foreignContentPathR.FindStringSubmatch(req.URL.Path)
+			if len(matches) < 4 {
+				return false
+			}
+
+			workspaceID := matches[2]
+			if workspaceID == "" {
+				return false
+			}
+
+			workspacePort := matches[1]
+			if workspacePort == "" {
+				return false
+			}
+
+			if m.Vars == nil {
+				m.Vars = make(map[string]string)
+			}
+			m.Vars[workspaceIDIdentifier] = workspaceID
+			m.Vars[workspacePortIdentifier] = workspacePort
+			m.Vars[foreignOriginIdentifier] = foreignOrigin
+			m.Vars[foreignPathIdentifier] = matches[3]
+			return true
+		}
+
+		matches = r.FindStringSubmatch(hostname)
 		if len(matches) < 4 {
 			return false
 		}
@@ -129,7 +188,7 @@ func matchWorkspacePortHostHeader(wsHostSuffix string, headerProvider hostHeader
 		m.Vars[workspaceIDIdentifier] = workspaceID
 		m.Vars[workspacePortIdentifier] = workspacePort
 		if len(matches) == 4 {
-			m.Vars[foreignOriginPrefix] = matches[1]
+			m.Vars[foreignOriginIdentifier] = matches[1]
 		}
 		return true
 	}

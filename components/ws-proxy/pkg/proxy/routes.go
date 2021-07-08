@@ -104,7 +104,7 @@ func installWorkspaceRoutes(r *mux.Router, config *RouteHandlerConfig, ip Worksp
 	routes.HandleDirectSupervisorRoute(r.PathPrefix("/_supervisor"), true)
 
 	routes.HandleDirectIDERoute(r.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		return m.Vars != nil && m.Vars[foreignOriginPrefix] != ""
+		return m.Vars != nil && m.Vars[foreignOriginIdentifier] != ""
 	}))
 
 	routes.HandleRoot(r.NewRoute())
@@ -132,7 +132,7 @@ func (ir *ideRoutes) HandleDirectIDERoute(route *mux.Route) {
 	r.Use(ir.Config.WorkspaceAuthHandler)
 	r.Use(ir.workspaceMustExistHandler)
 
-	r.NewRoute().HandlerFunc(proxyPass(ir.Config, workspacePodResolver))
+	r.NewRoute().HandlerFunc(proxyPass(ir.Config, workspacePodResolver, withWorkspaceTransport()))
 }
 
 func (ir *ideRoutes) HandleDirectSupervisorRoute(route *mux.Route, authenticated bool) {
@@ -323,6 +323,7 @@ func installWorkspacePortRoutes(r *mux.Router, config *RouteHandlerConfig) error
 				workspacePodPortResolver,
 				withHTTPErrorHandler(showPortNotFoundPage),
 				withXFrameOptionsFilter(),
+				withWorkspaceTransport(),
 			)(rw, r)
 		},
 	)
@@ -706,4 +707,23 @@ func servePortNotFoundPage(config *Config) (http.Handler, error) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(page)
 	}), nil
+}
+
+type workspaceTransport struct {
+	transport http.RoundTripper
+}
+
+func (t *workspaceTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	vars := mux.Vars(req)
+	if vars[foreignPathIdentifier] != "" {
+		req = req.Clone(req.Context())
+		req.URL.Path = vars[foreignPathIdentifier]
+	}
+	return t.transport.RoundTrip(req)
+}
+
+func withWorkspaceTransport() proxyPassOpt {
+	return func(h *proxyPassConfig) {
+		h.Transport = &workspaceTransport{h.Transport}
+	}
 }
