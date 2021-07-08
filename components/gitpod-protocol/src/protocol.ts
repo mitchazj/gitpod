@@ -1223,9 +1223,18 @@ export interface PrebuildInfo {
     project: string;
     cloneUrl: string;
     branch: string;
+    branchPrebuildNumber: string;
     startedAt: string;
     startedBy: string;
+    startedByAvatar?: string;
     status: PrebuiltWorkspaceState;
+    changeTitle: string;
+    changeDate: string;
+    changeAuthor: string;
+    changeAuthorAvatar?: string;
+    changePR?: string;
+    changeUrl?: string;
+    changeHash: string;
 }
 
 export interface Team {
