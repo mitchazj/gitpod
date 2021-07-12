@@ -218,6 +218,11 @@ export class CodeSyncService {
                 res.sendStatus(204);
                 return;
             }
+            const content = req.body as string;
+            if (resourceKey === 'machines' && content.length > 200) {
+                res.sendStatus(413);
+                return;
+            }
             let latestRev = typeof req.headers['If-Match'] === 'string' ? req.headers['If-Match'] : undefined;
             if (latestRev === fromTheiaRev) {
                 latestRev = undefined;
@@ -233,7 +238,6 @@ export class CodeSyncService {
                 request.setContentType(contentType);
                 const urlResponse = await util.promisify<UploadUrlRequest, UploadUrlResponse>(this.blobs.uploadUrl.bind(this.blobs))(request);
                 const url = urlResponse.getUrl();
-                const content = req.body as string;
                 const response = await fetch(url, {
                     method: 'PUT',
                     body: content,
